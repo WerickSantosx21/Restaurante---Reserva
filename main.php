@@ -13,6 +13,7 @@ require_once __DIR__ . '/conexao.php';
     
 </head>
 <body>
+    <h1> Sistema de reservas do restaurante</h1>
     <?php
         
 
