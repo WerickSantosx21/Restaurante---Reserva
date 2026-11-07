@@ -38,3 +38,11 @@ ALTER TABLE `usuarios`
   MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
+
+INSERT INTO `usuarios` (`name`, `email`, `password`, `situação`) VALUES
+('Werick Teste', 'werick@email.com', '214513', 1);
+
+UPDATE 'usuarios'
+SET 'password' = '214513'
+WHERE 'email' = werick7santos@gmail.com
+
