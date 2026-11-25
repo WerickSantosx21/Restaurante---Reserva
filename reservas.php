@@ -1410,57 +1410,26 @@ $horarios = $stmtHorarios->fetchAll(PDO::FETCH_ASSOC);
                     </p>
 
                 `;
-
-
-
             }
-
-
 
         }
 
 
-
-        // Atualiza quando a data mudar.
-
         campoData.addEventListener('change', consultarMesas);
 
-
-
-        // Atualiza quando o horário mudar.
 
         campoHorario.addEventListener('change', consultarMesas);
 
 
-
-        // Confere se uma mesa foi selecionada.
-
         document.getElementById('formReserva')
 
             .addEventListener('submit', function(event) {
-
-
-
                 if (!campoIdMesa.value) {
-
-
-
                     event.preventDefault();
 
-
-
                     alert('Selecione uma mesa disponível.');
-
-
-
                 }
-
-
-
             });
-
-
-
     </script>
 
 

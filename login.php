@@ -43,15 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $senhaBanco = $usuario['password'];
 
-            // Verifica senha protegida com password_hash()
+            
             $senhaValida = password_verify($senha, $senhaBanco);
 
-            // Compatibilidade temporária com senhas antigas em MD5
+           
             if (!$senhaValida && hash_equals($senhaBanco, md5($senha))) {
 
                 $senhaValida = true;
 
-                // Atualiza automaticamente o MD5 para password_hash()
+               
                 $novoHash = password_hash($senha, PASSWORD_DEFAULT);
 
                 $update = $pdo->prepare(
@@ -94,129 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/login.css">
 
     <title>Login - Sistema de Reserva</title>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1e1e2f 0%, #11111d 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-        }
-
-        .login-container {
-            background: #1f1f31;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .login-container h2 {
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #fff;
-            text-align: center;
-        }
-
-        .login-container p.subtitle {
-            color: #8a8aa8;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .error-box {
-            background: rgba(255, 75, 75, 0.1);
-            color: #ff4b4b;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 75, 75, 0.2);
-            margin-bottom: 20px;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #cbcbde;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 12px 16px;
-            background: #141423;
-            border: 1px solid #2e2e48;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.1s ease;
-            margin-top: 10px;
-        }
-
-        .btn-submit:hover {
-            background: #0069d9;
-        }
-
-        .btn-submit:active {
-            transform: scale(0.98);
-        }
-
-        .signup-link {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #8a8aa8;
-        }
-
-        .signup-link a {
-            color: #007bff;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s ease;
-        }
-
-        .signup-link a:hover {
-            color: #3395ff;
-            text-decoration: underline;
-        }
+        
     </style>
 </head>
 
