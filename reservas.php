@@ -1,31 +1,198 @@
 
 <?php
+
 session_start();
 
 require_once __DIR__ . '/conexao.php';
 
+// Verifica se está logado.
 if (!isset($_SESSION['idusuario'])) {
     header('Location: login.php');
     exit;
 }
 
-// Buscar mesas disponíveis no banco
-$sqlMesas = "SELECT * FROM mesas
-             WHERE status = 'Disponível'
-             ORDER BY numero_mesa";
+$mensagem = '';
+$tipoMensagem = '';
 
-$stmtMesas = $pdo->prepare($sqlMesas);
-$stmtMesas->execute();
-$mesas = $stmtMesas->fetchAll(PDO::FETCH_ASSOC);
+// ======================================
+// CADASTRAR RESERVA
+// ======================================
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-// Buscar horários disponíveis no banco
-$sqlHorarios = "SELECT * FROM horarios
-                WHERE status = 'Disponível'
-                ORDER BY horario";
+    $data = $_POST['data_reserva'] ?? '';
+    $pessoas = (int) ($_POST['quantidade_pessoas'] ?? 0);
+    $idhorario = (int) ($_POST['idhorario'] ?? 0);
+    $idmesa = (int) ($_POST['idmesa'] ?? 0);
+
+    $idusuario = (int) $_SESSION['idusuario'];
+
+    $dataObjeto = DateTime::createFromFormat('!Y-m-d', $data);
+
+    if (
+        !$dataObjeto ||
+        $dataObjeto->format('Y-m-d') !== $data ||
+        $pessoas <= 0 ||
+        $idhorario <= 0 ||
+        $idmesa <= 0
+    ) {
+
+        $mensagem = 'Preencha todos os campos e selecione uma mesa.';
+        $tipoMensagem = 'erro';
+
+    } elseif ($data < date('Y-m-d')) {
+
+        $mensagem = 'Não é possível reservar uma data passada.';
+        $tipoMensagem = 'erro';
+
+    } else {
+
+        try {
+
+            $pdo->beginTransaction();
+
+            // Verifica e bloqueia a mesa durante o cadastro.
+            $sqlMesa = "
+                SELECT capacidade
+                FROM mesas
+                WHERE idmesa = :idmesa
+                AND status = 'Disponível'
+                FOR UPDATE
+            ";
+
+            $stmtMesa = $pdo->prepare($sqlMesa);
+
+            $stmtMesa->execute([
+                ':idmesa' => $idmesa
+            ]);
+
+            $mesa = $stmtMesa->fetch(PDO::FETCH_ASSOC);
+
+            if (!$mesa) {
+                throw new Exception('Mesa não encontrada ou indisponível.');
+            }
+
+            // Confere a capacidade.
+            if ($pessoas > (int) $mesa['capacidade']) {
+                throw new Exception('Quantidade de pessoas maior que a capacidade da mesa.');
+            }
+
+            // Confere o horário.
+            $sqlHorario = "
+                SELECT idhorario
+                FROM horarios
+                WHERE idhorario = :idhorario
+                AND status = 'Disponível'
+            ";
+
+            $stmtHorario = $pdo->prepare($sqlHorario);
+
+            $stmtHorario->execute([
+                ':idhorario' => $idhorario
+            ]);
+
+            if (!$stmtHorario->fetch()) {
+                throw new Exception('Horário indisponível.');
+            }
+
+            // Verifica se a mesa já foi reservada.
+            $sqlVerifica = "
+                SELECT idreserva
+                FROM reservas
+                WHERE idmesa = :idmesa
+                AND idhorario = :idhorario
+                AND data_reserva = :data
+                AND status <> 'Cancelada'
+                LIMIT 1
+                FOR UPDATE
+            ";
+
+            $stmtVerifica = $pdo->prepare($sqlVerifica);
+
+            $stmtVerifica->execute([
+                ':idmesa' => $idmesa,
+                ':idhorario' => $idhorario,
+                ':data' => $data
+            ]);
+
+            if ($stmtVerifica->fetch()) {
+                throw new Exception('Essa mesa já está reservada nesse dia e horário. Escolha outra.');
+            }
+
+            // Insere a reserva.
+            $sqlInsert = "
+                INSERT INTO reservas (
+                    idusuario,
+                    idmesa,
+                    idhorario,
+                    data_reserva,
+                    quantidade_pessoas,
+                    status,
+                    data_criacao
+                )
+                VALUES (
+                    :idusuario,
+                    :idmesa,
+                    :idhorario,
+                    :data,
+                    :pessoas,
+                    'Confirmada',
+                    NOW()
+                )
+            ";
+
+            $stmtInsert = $pdo->prepare($sqlInsert);
+
+            $stmtInsert->execute([
+                ':idusuario' => $idusuario,
+                ':idmesa' => $idmesa,
+                ':idhorario' => $idhorario,
+                ':data' => $data,
+                ':pessoas' => $pessoas
+            ]);
+
+            $pdo->commit();
+
+            $mensagem = 'Reserva cadastrada com sucesso!';
+            $tipoMensagem = 'sucesso';
+
+        } catch (Exception $e) {
+
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            $mensagem = $e->getMessage();
+            $tipoMensagem = 'erro';
+
+        } catch (PDOException $e) {
+
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            error_log($e->getMessage());
+
+            $mensagem = 'Erro ao cadastrar a reserva no banco de dados.';
+            $tipoMensagem = 'erro';
+        }
+    }
+}
+
+// ======================================
+// CONSULTAR HORÁRIOS
+// ======================================
+
+$sqlHorarios = "
+    SELECT *
+    FROM horarios
+    WHERE status = 'Disponível'
+    ORDER BY horario
+";
 
 $stmtHorarios = $pdo->prepare($sqlHorarios);
 $stmtHorarios->execute();
+
 $horarios = $stmtHorarios->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
@@ -34,23 +201,33 @@ $horarios = $stmtHorarios->fetchAll(PDO::FETCH_ASSOC);
 <html lang="pt-br">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Reservas | Sistema Restaurante</title>
+    <title>Reservar mesa | Restaurante</title>
 
     <link rel="stylesheet" href="assets/css/reservas.css">
+
 </head>
 
 <body>
 
-    <!-- MENU LATERAL -->
     <aside class="sidebar">
 
         <div class="logo">
+
             <span class="logo-icone">♨</span>
+
             <h2>Restaurante</h2>
+
             <p>Sistema de Reservas</p>
+
+        </div>
+
+        <div class="menu-titulo">
+            MENU PRINCIPAL
         </div>
 
         <nav>
@@ -75,267 +252,448 @@ $horarios = $stmtHorarios->fetchAll(PDO::FETCH_ASSOC);
                 Gerenciamento de cardapio
             </a>
 
+        </nav>
+
+        <div class="menu-titulo menu-secundario">
+            CONTA
+        </div>
+
+        <nav>
+
             <a href="logout.php">
                 <span>⇥</span>
-                Sair
+                Sair do sistema
             </a>
 
         </nav>
 
         <div class="sidebar-rodape">
-            Sistema de<br>
-            gerenciamento
+            <span class="status-online"></span>
+            Sistema operacional
         </div>
 
     </aside>
 
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="conteudo">
 
-        <!-- CABEÇALHO -->
         <header class="topo">
 
             <div>
-                <span class="subtitulo">PAINEL ADMINISTRATIVO</span>
-                <h1>Gestão de reservas</h1>
-                <p>Gerencie os horários e a disponibilidade das mesas.</p>
+
+                <span class="subtitulo">
+                    GERENCIAMENTO DE RESERVAS
+                </span>
+
+                <h1>Reservar mesa</h1>
+
+                <p>
+                    Selecione os dados para realizar sua reserva.
+                </p>
+
+            </div>
+
+            <div class="topo-status">
+                <span class="status-online"></span>
+                Sistema ativo
             </div>
 
         </header>
 
 
-        <!-- FILTROS DA RESERVA -->
-        <section class="formulario-reserva">
+        <?php if (!empty($mensagem)): ?>
 
-            <div class="titulo-painel">
-                <div>
+            <div class="mensagem <?= htmlspecialchars($tipoMensagem) ?>">
+
+                <?= htmlspecialchars($mensagem) ?>
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <form action="reservas.php" method="POST" id="formReserva">
+
+            <section class="formulario-reserva">
+
+                <div class="titulo-painel">
+
                     <h2>Dados da reserva</h2>
-                    <p>Informe os detalhes para consultar as mesas.</p>
-                </div>
-            </div>
 
-            <div class="campos-reserva">
-
-                <div class="campo-formulario">
-
-                    <label for="data">Data da reserva</label>
-
-                    <input
-                        type="date"
-                        id="data"
-                        name="data"
-                        required
-                    >
+                    <p>Informe os dados da sua visita.</p>
 
                 </div>
 
+                <div class="campos-reserva">
 
-                <div class="campo-formulario">
+                    <div class="campo-formulario">
 
-                    <label for="pessoas">Quantidade de pessoas</label>
+                        <label for="data">
+                            Data da reserva
+                        </label>
 
-                    <select id="pessoas" name="pessoas" required>
+                        <input
+                            type="date"
+                            id="data"
+                            name="data_reserva"
+                            min="<?= date('Y-m-d') ?>"
+                            required
+                        >
 
-                        <option value="">Selecione</option>
+                    </div>
 
-                        <option value="1">1 pessoa</option>
-                        <option value="2">2 pessoas</option>
-                        <option value="3">3 pessoas</option>
-                        <option value="4">4 pessoas</option>
-                        <option value="5">5 pessoas</option>
-                        <option value="6">6 pessoas</option>
 
-                    </select>
+                    <div class="campo-formulario">
+
+                        <label for="pessoas">
+                            Quantidade de pessoas
+                        </label>
+
+                        <select
+                            id="pessoas"
+                            name="quantidade_pessoas"
+                            required
+                        >
+
+                            <option value="">Selecione</option>
+
+                            <?php for ($i = 1; $i <= 6; $i++): ?>
+
+                                <option value="<?= $i ?>">
+                                    <?= $i ?>
+                                    <?= $i == 1 ? 'pessoa' : 'pessoas' ?>
+                                </option>
+
+                            <?php endfor; ?>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo-formulario">
+
+                        <label for="horario">
+                            Horário
+                        </label>
+
+                        <select
+                            id="horario"
+                            name="idhorario"
+                            required
+                        >
+
+                            <option value="">Selecione um horário</option>
+
+                            <?php foreach ($horarios as $horario): ?>
+
+                                <option value="<?= htmlspecialchars($horario['idhorario']) ?>">
+
+                                    <?= htmlspecialchars(substr($horario['horario'], 0, 5)) ?>
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="area-mesas">
+
+                <div class="titulo-painel">
+
+                    <h2>Disponibilidade de mesas</h2>
+
+                    <p>Selecione uma mesa para sua reserva.</p>
 
                 </div>
 
 
-                <div class="campo-formulario">
+                <div class="legenda-mesas">
 
-                    <label for="horario">Horário da reserva</label>
+                    <div class="item-legenda">
+                        <span class="bolinha-legenda bolinha-verde"></span>
+                        Disponível
+                    </div>
 
-                    <select id="horario" name="horario" required>
+                    <div class="item-legenda">
+                        <span class="bolinha-legenda bolinha-amarela"></span>
+                        Selecionada
+                    </div>
 
-                        <option value="">Selecione</option>
-
-                        <option value="18:00">18:00</option>
-                        <option value="19:00">19:00</option>
-                        <option value="20:00">20:00</option>
-                        <option value="21:00">21:00</option>
-
-                    </select>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- PAINEL DE ESCOLHA DAS MESAS -->
-        <section class="area-mesas">
-
-            <div class="titulo-painel">
-
-                <div>
-                    <h2>Disponibilidade das mesas</h2>
-                    <p>Selecione uma mesa para realizar a reserva.</p>
-                </div>
-
-                <span class="total-mesas">08 mesas cadastradas</span>
-
-            </div>
-
-
-            <!-- LEGENDA -->
-            <div class="legenda-mesas">
-
-                <div class="legenda-item">
-                    <span class="indicador disponivel"></span>
-                    Disponível
-                </div>
-
-                <div class="legenda-item">
-                    <span class="indicador selecionada"></span>
-                    Selecionada
-                </div>
-
-                <div class="legenda-item">
-                    <span class="indicador ocupada"></span>
-                    Ocupada
-                </div>
-
-            </div>
-
-
-            <!-- PLANTA DO RESTAURANTE -->
-            <div class="planta-restaurante">
-
-                <div class="planta-cabecalho">
-                    <span>PLANTA DO RESTAURANTE</span>
-                    <span>ÁREA DE ATENDIMENTO</span>
-                </div>
-
-
-                <div class="grade-mesas">
-
-                    <button type="button" class="mesa disponivel" data-capacidade="2">
-                        <span class="mesa-numero">01</span>
-                        <span class="mesa-nome">Mesa 01</span>
-                        <small>2 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="4">
-                        <span class="mesa-numero">02</span>
-                        <span class="mesa-nome">Mesa 02</span>
-                        <small>4 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="6">
-                        <span class="mesa-numero">03</span>
-                        <span class="mesa-nome">Mesa 03</span>
-                        <small>6 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="2">
-                        <span class="mesa-numero">04</span>
-                        <span class="mesa-nome">Mesa 04</span>
-                        <small>2 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="4">
-                        <span class="mesa-numero">05</span>
-                        <span class="mesa-nome">Mesa 05</span>
-                        <small>4 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="6">
-                        <span class="mesa-numero">06</span>
-                        <span class="mesa-nome">Mesa 06</span>
-                        <small>6 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="4">
-                        <span class="mesa-numero">07</span>
-                        <span class="mesa-nome">Mesa 07</span>
-                        <small>4 lugares</small>
-                    </button>
-
-
-                    <button type="button" class="mesa disponivel" data-capacidade="2">
-                        <span class="mesa-numero">08</span>
-                        <span class="mesa-nome">Mesa 08</span>
-                        <small>2 lugares</small>
-                    </button>
+                    <div class="item-legenda">
+                        <span class="bolinha-legenda bolinha-vermelha"></span>
+                        Ocupada
+                    </div>
 
                 </div>
 
-            </div>
 
+                <div class="planta-restaurante">
 
-            <!-- RESUMO DA SELEÇÃO -->
-            <div class="resumo-selecao">
+                    <div class="planta-cabecalho">
 
-                <div>
-                    <span class="resumo-label">Mesa selecionada</span>
-                    <strong id="mesa-selecionada">Nenhuma mesa selecionada</strong>
+                        <h3>Planta do restaurante</h3>
+
+                        <span>Área de atendimento</span>
+
+                    </div>
+
+                    <div class="grade-mesas" id="grade-mesas">
+
+                        <p class="aviso-sem-mesas">
+                            Selecione uma data e um horário para consultar as mesas.
+                        </p>
+
+                    </div>
+
                 </div>
 
-                <div>
-                    <span class="resumo-label">Capacidade</span>
-                    <strong id="capacidade-mesa">-</strong>
+
+                <div class="resumo-selecao">
+
+                    <div>
+
+                        <h3>Mesa selecionada</h3>
+
+                        <strong id="mesa-selecionada">
+                            Nenhuma mesa selecionada
+                        </strong>
+
+                    </div>
+
+                    <div>
+
+                        <h3>Capacidade</h3>
+
+                        <strong id="capacidade-mesa">-</strong>
+
+                    </div>
+
                 </div>
 
-            </div>
 
-        </section>
+                <input
+                    type="hidden"
+                    name="idmesa"
+                    id="idmesa"
+                    required
+                >
+
+
+                <button type="submit" class="botao-confirmar">
+                    Confirmar reserva →
+                </button>
+
+            </section>
+
+        </form>
+
+
+        <footer class="rodape">
+            Sistema de Reservas • Restaurante
+        </footer>
 
     </main>
 
-<script>
-    // Captura todas as mesas disponíveis.
-    const mesas = document.querySelectorAll('.mesa.disponivel');
 
-    // Elementos que mostram o resumo da seleção.
-    const mesaSelecionada = document.getElementById('mesa-selecionada');
-    const capacidadeMesa = document.getElementById('capacidade-mesa');
+    <script>
 
-    // Guarda a mesa escolhida.
-    let mesaAtual = null;
+        const campoData = document.getElementById('data');
 
-    mesas.forEach(function(mesa) {
+        const campoHorario = document.getElementById('horario');
 
-        mesa.addEventListener('click', function() {
+        const campoIdMesa = document.getElementById('idmesa');
 
-            // Remove a seleção anterior.
-            mesas.forEach(function(item) {
-                item.classList.remove('selecionada');
+        const gradeMesas = document.getElementById('grade-mesas');
+
+        const mesaSelecionada = document.getElementById('mesa-selecionada');
+
+        const capacidadeMesa = document.getElementById('capacidade-mesa');
+
+
+        // Limpa a seleção atual.
+        function limparSelecao() {
+
+            campoIdMesa.value = '';
+
+            mesaSelecionada.textContent = 'Nenhuma mesa selecionada';
+
+            capacidadeMesa.textContent = '-';
+
+        }
+
+
+        // Consulta as mesas disponíveis.
+        async function consultarMesas() {
+
+            const data = campoData.value;
+
+            const horario = campoHorario.value;
+
+            limparSelecao();
+
+            if (!data || !horario) {
+
+                gradeMesas.innerHTML = `
+                    <p class="aviso-sem-mesas">
+                        Selecione uma data e um horário para consultar as mesas.
+                    </p>
+                `;
+
+                return;
+            }
+
+            gradeMesas.innerHTML = `
+                <p class="aviso-sem-mesas">
+                    Consultando disponibilidade...
+                </p>
+            `;
+
+            try {
+
+                const url = new URL('disponibilidade.php', window.location.href);
+
+                url.searchParams.set('data', data);
+
+                url.searchParams.set('idhorario', horario);
+
+                const resposta = await fetch(url.toString(), {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const resultado = await resposta.json();
+
+                if (!resposta.ok || !resultado.sucesso) {
+
+                    throw new Error(
+                        resultado.mensagem || 'Erro ao consultar mesas.'
+                    );
+
+                }
+
+                gradeMesas.innerHTML = '';
+
+                if (resultado.mesas.length === 0) {
+
+                    gradeMesas.innerHTML = `
+                        <p class="aviso-sem-mesas">
+                            Nenhuma mesa cadastrada está disponível.
+                        </p>
+                    `;
+
+                    return;
+                }
+
+                resultado.mesas.forEach(function(mesa) {
+
+                    const ocupada = Number(mesa.ocupada) === 1;
+
+                    const botao = document.createElement('button');
+
+                    botao.type = 'button';
+
+                    botao.className = ocupada
+                        ? 'mesa ocupada'
+                        : 'mesa disponivel';
+
+                    const numero = document.createElement('span');
+
+                    numero.className = 'mesa-numero';
+
+                    numero.textContent =
+                        'Mesa ' + String(mesa.numero_mesa).padStart(2, '0');
+
+                    const capacidade = document.createElement('strong');
+
+                    capacidade.textContent = mesa.capacidade + ' lugares';
+
+                    const status = document.createElement('small');
+
+                    status.textContent = ocupada ? 'Ocupada' : 'Disponível';
+
+                    botao.appendChild(numero);
+
+                    botao.appendChild(capacidade);
+
+                    botao.appendChild(status);
+
+                    if (ocupada) {
+
+                        botao.disabled = true;
+
+                    } else {
+
+                        botao.addEventListener('click', function() {
+
+                            document.querySelectorAll('.mesa.selecionada')
+                                .forEach(function(item) {
+                                    item.classList.remove('selecionada');
+                                });
+
+                            botao.classList.add('selecionada');
+
+                            campoIdMesa.value = mesa.idmesa;
+
+                            mesaSelecionada.textContent = numero.textContent;
+
+                            capacidadeMesa.textContent =
+                                mesa.capacidade + ' lugares';
+
+                        });
+
+                    }
+
+                    gradeMesas.appendChild(botao);
+
+                });
+
+            } catch (erro) {
+
+                console.error('Erro:', erro);
+
+                gradeMesas.innerHTML = `
+                    <p class="aviso-sem-mesas">
+                        Não foi possível consultar as mesas.
+                        Confira o arquivo disponibilidade.php.
+                    </p>
+                `;
+
+            }
+
+        }
+
+
+        // Atualiza quando a data mudar.
+        campoData.addEventListener('change', consultarMesas);
+
+        // Atualiza quando o horário mudar.
+        campoHorario.addEventListener('change', consultarMesas);
+
+
+        // Confere se uma mesa foi selecionada.
+        document.getElementById('formReserva')
+            .addEventListener('submit', function(event) {
+
+                if (!campoIdMesa.value) {
+
+                    event.preventDefault();
+
+                    alert('Selecione uma mesa disponível.');
+
+                }
+
             });
 
-            // Seleciona a mesa clicada.
-            mesa.classList.add('selecionada');
-
-            // Guarda o número e a capacidade.
-            mesaAtual = mesa.querySelector('.mesa-numero').textContent;
-            const capacidade = mesa.dataset.capacidade;
-
-            // Atualiza o resumo na tela.
-            mesaSelecionada.textContent = mesaAtual;
-            capacidadeMesa.textContent = capacidade + ' lugares';
-
-        });
-
-    });
-</script>
-</body>
+    </script>
 
 </body>
-
 </html>
