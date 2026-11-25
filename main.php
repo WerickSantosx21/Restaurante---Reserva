@@ -49,7 +49,7 @@ require_once __DIR__ . '/conexao.php';
 
             <a href="cardapio.php">
                 <span>♨</span>
-                Cardápio
+                Gerenciamento de cardapio
             </a>
 
         </nav>
@@ -160,7 +160,7 @@ require_once __DIR__ . '/conexao.php';
 
                     <div class="modulo-conteudo">
 
-                        <h3>Reservar mesa</h3>
+                        <h3>Reservar </h3>
 
                         <p>
                             Consulte a disponibilidade e escolha
@@ -210,7 +210,7 @@ require_once __DIR__ . '/conexao.php';
 
                     <div class="modulo-conteudo">
 
-                        <h3>Cardápio</h3>
+                        <h3>Cardapio</h3>
 
                         <p>
                             Consulte os produtos e os pratos
@@ -246,7 +246,7 @@ require_once __DIR__ . '/conexao.php';
                     <span class="informacao-icone">▣</span>
 
                     <div>
-                        <strong>Reservas</strong>
+                        <strong>Reservas de mesa</strong>
                         <p>Gerenciamento de agendamentos</p>
                     </div>
 

@@ -72,7 +72,7 @@ $horarios = $stmtHorarios->fetchAll(PDO::FETCH_ASSOC);
 
             <a href="cardapio.php">
                 <span>♨</span>
-                Cardápio
+                Gerenciamento de cardapio
             </a>
 
             <a href="logout.php">
