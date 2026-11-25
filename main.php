@@ -59,7 +59,7 @@ require_once __DIR__ . '/conexao.php';
         </div>
 
         <nav>
-            <a href="logout.php">
+            <a href="login.php">
                 <span>⇥</span>
                 Sair do sistema
             </a>
