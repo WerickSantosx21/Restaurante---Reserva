@@ -1,3 +1,8 @@
+
+/* =========================================
+   CONFIGURAÇÕES GERAIS
+========================================= */
+
 * {
     margin: 0;
     padding: 0;
@@ -6,23 +11,33 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #f5f2ed;
-    color: #333;
+    background-color: #171624;
+    color: #f2f2f7;
+    min-height: 100vh;
 }
+
+
+/* =========================================
+   MENU LATERAL
+========================================= */
 
 .sidebar {
     width: 250px;
     height: 100vh;
-    background-color: #49351f;
-    color: white;
+    background-color: #1d1b2b;
+    border-right: 1px solid #302d40;
+    color: #ffffff;
     padding: 30px 20px;
     position: fixed;
     top: 0;
     left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
 }
 
 .logo {
-    text-align:center;
+    text-align: center;
     padding-bottom: 50px;
 }
 
@@ -32,60 +47,426 @@ body {
 
 .logo h2 {
     margin-top: 10px;
+    font-size: 22px;
 }
 
 .logo p {
     font-size: 12px;
-    color: #d6c5ad;
+    color: #a9a5bc;
+    margin-top: 5px;
 }
 
 .sidebar nav {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .sidebar nav a {
-    color: white;
+    display: flex;
+    align-items: center;
+    color: #c6c3d2;
     text-decoration: none;
     padding: 14px;
     border-radius: 8px;
+    font-size: 14px;
     transition: 0.3s;
+}
+
+.sidebar nav a span {
+    margin-right: 12px;
+    font-size: 17px;
 }
 
 .sidebar nav a:hover,
 .sidebar nav a.ativo {
-    background-color: #e9a64e;
-    color: #2e1a0f;
-} 
-
-.sidebar nav span {
-    margin-right: 10px;
+    background-color: #287cf0;
+    color: #ffffff;
 }
 
 .sidebar-rodape {
-    position: absolute;
-    bottom: 30px;
+    margin-top: auto;
     text-align: center;
-    width: calc(100% - 40px);
-    color: #d6c5ad;
+    color: #77748e;
+    font-size: 12px;
+    padding-bottom: 10px;
 }
+
+
+/* =========================================
+   CONTEÚDO PRINCIPAL
+========================================= */
 
 .conteudo {
     margin-left: 250px;
-    padding: 40px;
+    padding: 35px 40px;
+    min-height: 100vh;
 }
 
+
+/* =========================================
+   CABEÇALHO
+========================================= */
+
 .topo {
-    margin-bottom: 35px;
+    margin-bottom: 30px;
+}
+
+.subtitulo {
+    display: block;
+    color: #438fff;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
 }
 
 .topo h1 {
-    color: #49351f;
-    font-size: 30px;
+    color: #ffffff;
+    font-size: 27px;
     margin-bottom: 8px;
 }
 
 .topo p {
-    color: #777;
+    color: #a9a5bc;
+    font-size: 14px;
+}
+
+
+/* =========================================
+   PAINÉIS
+========================================= */
+
+.formulario-reserva,
+.area-mesas {
+    background-color: #211f30;
+    border: 1px solid #302d40;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+    width: 100%;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+}
+
+.titulo-painel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.titulo-painel h2 {
+    color: #ffffff;
+    font-size: 18px;
+    margin-bottom: 7px;
+}
+
+.titulo-painel p {
+    color: #a9a5bc;
+    font-size: 13px;
+}
+
+.total-mesas {
+    background-color: #29273a;
+    border: 1px solid #414056;
+    color: #a9caff;
+    padding: 9px 13px;
+    border-radius: 7px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   CAMPOS DA RESERVA
+========================================= */
+
+.campos-reserva {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.campo-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.campo-formulario label {
+    color: #d7d5e2;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.campo-formulario input,
+.campo-formulario select {
+    width: 100%;
+    height: 45px;
+    padding: 0 12px;
+    background-color: #191827;
+    border: 1px solid #414056;
+    border-radius: 7px;
+    color: #ffffff;
+    font-size: 13px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.campo-formulario input:focus,
+.campo-formulario select:focus {
+    border-color: #287cf0;
+    box-shadow: 0 0 0 3px rgba(40, 124, 240, 0.15);
+}
+
+.campo-formulario input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+
+/* =========================================
+   ÁREA DE DISPONIBILIDADE DAS MESAS
+========================================= */
+
+.area-mesas {
+    margin-top: 25px;
+}
+
+.legenda-mesas {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c6c3d2;
+    font-size: 12px;
+}
+
+.indicador {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.indicador.disponivel {
+    background-color: #25865b;
+}
+
+.indicador.selecionada {
+    background-color: #287cf0;
+}
+
+.indicador.ocupada {
+    background-color: #a34255;
+}
+
+
+/* =========================================
+   PLANTA DO RESTAURANTE
+========================================= */
+
+.planta-restaurante {
+    background-color: #191827;
+    border: 1px solid #353247;
+    border-radius: 10px;
+    padding: 22px;
+}
+
+.planta-cabecalho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #77748e;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #353247;
+    margin-bottom: 22px;
+}
+
+.grade-mesas {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+
+/* =========================================
+   MESAS
+========================================= */
+
+.mesa {
+    min-height: 115px;
+    border: 1px solid #26734f;
+    border-radius: 9px;
+    background-color: #20382f;
+    color: #8ce0b5;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    transition: 0.25s;
+}
+
+.mesa-numero {
+    font-size: 11px;
+    color: #8b8aa1;
+}
+
+.mesa-nome {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.mesa small {
+    font-size: 12px;
+    color: #a9a5bc;
+}
+
+
+/* MESA DISPONÍVEL */
+
+.mesa.disponivel:hover {
+    background-color: #294d3e;
+    border-color: #35b879;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+
+/* MESA SELECIONADA */
+
+.mesa.selecionada {
+    background-color: #193d70;
+    border: 2px solid #287cf0;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(40, 124, 240, 0.2);
+}
+
+
+/* MESA OCUPADA */
+
+.mesa.ocupada {
+    background-color: #482b37;
+    border-color: #914455;
+    color: #e69aa9;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+/* =========================================
+   RESUMO DA SELEÇÃO
+========================================= */
+
+.resumo-selecao {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+    background-color: #191827;
+    border: 1px solid #353247;
+    border-radius: 9px;
+    padding: 18px 20px;
+    margin-top: 22px;
+}
+
+.resumo-selecao div {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.resumo-label {
+    color: #858198;
+    font-size: 11px;
+}
+
+.resumo-selecao strong {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+
+/* =========================================
+   RESPONSIVIDADE
+========================================= */
+
+@media (max-width: 1100px) {
+
+    .grade-mesas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .campos-reserva {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media (max-width: 700px) {
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 15px;
+    }
+
+    .logo {
+        padding-bottom: 15px;
+    }
+
+    .sidebar nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .sidebar nav a {
+        padding: 10px;
+        font-size: 12px;
+    }
+
+    .sidebar-rodape {
+        display: none;
+    }
+
+    .conteudo {
+        margin-left: 0;
+        padding: 20px;
+    }
+
+    .titulo-painel {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .grade-mesas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .planta-restaurante {
+        padding: 12px;
+    }
+
+    .resumo-selecao {
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
 }
